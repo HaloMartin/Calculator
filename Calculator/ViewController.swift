@@ -13,13 +13,14 @@ class ViewController: UIViewController
     @IBOutlet weak var display: UILabel!
     
     var userIsInTheMiddleOfTypingANumber:Bool = false
+    var userClearing:Bool = false
     
     var brain = CalculatorBrain()
     
     @IBAction func appendDigit(sender: UIButton) {
         let digit = sender.currentTitle!
         if userIsInTheMiddleOfTypingANumber{
-            display.text = display.text! + digit
+            display.text! = display.text! + digit
         }else{
             display.text = digit
             userIsInTheMiddleOfTypingANumber = true
@@ -41,12 +42,23 @@ class ViewController: UIViewController
         }
     }
     
+    @IBAction func clear(sender: UIButton) {
+        displayValue = 0
+        userClearing = true
+        enter()
+    }
+    
     @IBAction func enter() {
         userIsInTheMiddleOfTypingANumber = false
-        if let result = brain.pushOperand(displayValue){
-            displayValue = result
+        if !userClearing{
+            if let result = brain.pushOperand(displayValue){
+                displayValue = result
+            }else{
+                displayValue = 0
+            }
         }else{
-            displayValue = 0
+            brain.removeAllOperand()
+            userClearing = false
         }
     }
     var displayValue:Double{

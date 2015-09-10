@@ -15,6 +15,7 @@ class CalculatorBrain
         case Operand(Double)
         case UnaryOperation(String,Double->Double)
         case BinaryOperation(String,(Double,Double)->Double)
+        case BracketOperation(String)
         
         var description: String{
             get {
@@ -25,7 +26,8 @@ class CalculatorBrain
                     return symbol
                 case .BinaryOperation(let symbol, _):
                     return symbol
-                    
+                case .BracketOperation(let symbol):
+                    return symbol
                 }
             }
         }
@@ -41,6 +43,8 @@ class CalculatorBrain
         knowOps["+"] = Op.BinaryOperation("+",+)
         knowOps["-"] = Op.BinaryOperation("-"){$1-$0}
         knowOps["√"] = Op.UnaryOperation("√",sqrt)
+        knowOps["("] = Op.BracketOperation("(")
+        knowOps[")"] = Op.BracketOperation(")")
     }
     private func evaluate(ops: [Op]) -> (result: Double?, remainingOps: [Op])
     {
@@ -63,6 +67,11 @@ class CalculatorBrain
                         return (operation(operand1,operand2),op2Evaluation.remainingOps)
                     }
                 }
+            case .BracketOperation(_):
+                let op1Evaluation = evaluate(remainingOps)
+                if let operand1 = op1Evaluation.result{
+                    return (operand1,op1Evaluation.remainingOps)
+                }
             }
         }
         return (nil,ops)
@@ -84,5 +93,8 @@ class CalculatorBrain
             opStack.append(operation)
         }
         return evaluate()
+    }
+    func removeAllOperand(){
+        opStack.removeAll(keepCapacity: false)
     }
 }
