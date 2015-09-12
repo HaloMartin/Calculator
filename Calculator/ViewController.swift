@@ -29,16 +29,12 @@ class ViewController: UIViewController
     }
     
     @IBAction func operate(sender: UIButton) {
-//        let operation = sender.currentTitle!
-        if userIsInTheMiddleOfTypingANumber {
+//        userIsInTheMiddleOfTypingANumber = false
+        if userIsInTheMiddleOfTypingANumber{
             enter()
         }
         if let operation = sender.currentTitle{
-            if let result = brain.performOperation(operation){
-                displayValue = result
-            }else{
-                displayValue = 0
-            }
+            brain.pushOperation(operation)
         }
     }
     
@@ -51,16 +47,24 @@ class ViewController: UIViewController
     @IBAction func enter() {
         userIsInTheMiddleOfTypingANumber = false
         if !userClearing{
-            if let result = brain.pushOperand(displayValue){
-                displayValue = result
-            }else{
-                displayValue = 0
-            }
+            brain.pushOperand(displayValue)
         }else{
             brain.removeAllOperand()
             userClearing = false
         }
     }
+    
+    @IBAction func equals(sender: UIButton) {
+        if userIsInTheMiddleOfTypingANumber{
+            enter()
+        }
+        if let result = brain.performEquals(){
+            displayValue = result
+        }else{
+            displayValue = 0
+        }
+    }
+    
     var displayValue:Double{
         get{
             return NSNumberFormatter().numberFromString(display.text!)!.doubleValue

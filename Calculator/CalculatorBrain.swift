@@ -37,6 +37,8 @@ class CalculatorBrain
     
     private var knowOps = [String:Op]()
     
+    private var endFlag = Bool(false)
+    
     init(){
         knowOps["×"] = Op.BinaryOperation("×",*)
         knowOps["÷"] = Op.BinaryOperation("÷"){$1/$0}
@@ -45,47 +47,78 @@ class CalculatorBrain
         knowOps["√"] = Op.UnaryOperation("√",sqrt)
         knowOps["("] = Op.BracketOperation("(")
         knowOps[")"] = Op.BracketOperation(")")
+        endFlag = Bool(false)
     }
-    private func evaluate(ops: [Op]) -> (result: Double?, remainingOps: [Op])
+    private func evaluate(preOp: Double,ops: [Op]) -> (result: Double?, remainingOps: [Op])
     {
         if !ops.isEmpty {
+            let preOperand = preOp
             var remainingOps = ops
             let op = remainingOps.removeLast()
             switch op{
             case .Operand(let operand):
-                return (operand,remainingOps)
-            case .UnaryOperation(_,let operation):
-                let operandEvaluation = evaluate(remainingOps)
-                if let operand = operandEvaluation.result {
-                    return (operation(operand),operandEvaluation.remainingOps)
+                println("操作数：\(operand)")
+                let op1Evaluation = evaluate(operand,ops:remainingOps)
+                if let operand2 = op1Evaluation.result{
+                    return (operand2,op1Evaluation.remainingOps)
+                }else{
+                    return (operand,op1Evaluation.remainingOps)
                 }
-            case .BinaryOperation(_,let operation):
-                let op1Evaluation = evaluate(remainingOps)
+            case .UnaryOperation(_,let operation):
+                return (operation(preOperand),remainingOps)
+            case .BinaryOperation(let op,let operation):
+                println("操作符：\(op)")
+                println("操作数1：\(preOperand)")
+                println("Stack:\(remainingOps)")
+                let op1Evaluation = evaluate(0,ops: remainingOps)
                 if let operand1 = op1Evaluation.result {
-                    let op2Evaluation = evaluate(op1Evaluation.remainingOps)
-                    if let operand2 = op2Evaluation.result{
-                        return (operation(operand1,operand2),op2Evaluation.remainingOps)
+                    println("操作数2：\(operand1)")
+                    return (operation(preOperand,operand1),op1Evaluation.remainingOps)
+                }else{
+                    println("Something happened,Operand:\(preOperand),Operator:\(op),Stack:\(op1Evaluation.remainingOps)")
+                    return (0,op1Evaluation.remainingOps)
+                }
+            case .BracketOperation(")"):
+                let op1Evaluation = evaluate(0,ops:remainingOps)
+                println("endFlag:\(endFlag)")
+                if let operand1 = op1Evaluation.result{
+                    if !endFlag{
+                        let op2Evaluation = evaluate(operand1,ops:op1Evaluation.remainingOps)
+                        if let operand2 = op2Evaluation.result{
+                            return (operand2,op2Evaluation.remainingOps)
+                        }
+                    }else{
+                        return (operand1,[Op]())
                     }
                 }
-            case .BracketOperation(_):
-                let op1Evaluation = evaluate(remainingOps)
+            case .BracketOperation("("):
+                let op1Evaluation = evaluate(preOperand,ops:remainingOps)
                 if let operand1 = op1Evaluation.result{
-                    return (operand1,op1Evaluation.remainingOps)
+                    return (nil,remainingOps)
+                }else{
+                    endFlag = true
+                    return (nil,remainingOps)
                 }
+            default:
+                return (0,remainingOps)
             }
         }
         return (nil,ops)
     }
     
     func evaluate() -> Double? {
-        let (result,remainder) = evaluate(opStack)
+        let (result,remainder) = evaluate(0,ops:opStack)
         println("\(opStack) = \(result) 加上剩下的 \(remainder)")
         return result
     }
     
-    func pushOperand(operand:Double)->Double?{
+    func pushOperand(operand:Double){
         opStack.append(Op.Operand(operand))
-        return evaluate()
+    }
+    func pushOperation(symbol:String){
+        if let operation = knowOps[symbol]{
+            opStack.append(operation)
+        }
     }
     
     func performOperation(symbol:String)->Double?{
@@ -96,5 +129,11 @@ class CalculatorBrain
     }
     func removeAllOperand(){
         opStack.removeAll(keepCapacity: false)
+    }
+    func performEquals()->Double?{
+        endFlag = false
+        let result = evaluate()
+        opStack.removeAll(keepCapacity: false)
+        return result
     }
 }
